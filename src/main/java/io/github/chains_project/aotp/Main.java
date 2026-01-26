@@ -3,14 +3,7 @@ package io.github.chains_project.aotp;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import com.google.common.io.LittleEndianDataInputStream;
 
 public class Main {
@@ -18,6 +11,89 @@ public class Main {
     // Magic number for AOTCache files
     // https://github.com/openjdk/jdk/blob/6f6966b28b2c5a18b001be49f5db429c667d7a8f/src/hotspot/share/include/cds.h#L39
     private static final int AOT_MAGIC = 0xf00baba2;
+    
+    // Pattern to search for: 0x800001080 (64-bit value, little-endian)
+    private static final long PATTERN_VALUE = 0x0000000800001080L;
+    
+    private static void findAndPrintSymbols(String filePath, CDSFileMapRegion rwRegion, CDSFileMapRegion roRegion, long requestedBaseAddress) throws IOException {
+        try (FileInputStream fis = new FileInputStream(filePath);
+             LittleEndianDataInputStream dis = new LittleEndianDataInputStream(fis)) {
+            
+            // Seek to the RW region start using FileInputStream.skip()
+            long bytesToSkip = rwRegion.fileOffset;
+            long totalSkipped = 0;
+            while (totalSkipped < bytesToSkip) {
+                long skipped = fis.skip(bytesToSkip - totalSkipped);
+                if (skipped <= 0) break;
+                totalSkipped += skipped;
+            }
+            
+            // Read longs sequentially until we find the pattern in RW region
+            long regionSize = rwRegion.used;
+            long longsToRead = regionSize / 8;
+            
+            for (long i = 0; i < longsToRead; i++) {
+                long value = dis.readLong();
+                if (value == PATTERN_VALUE) {
+                    // Found the pattern in RW region, read a few more bytes for the symbol pointer
+                    // Read 8 bytes (the symbol pointer)
+                    dis.skipBytes(16); // _kind, _misc_flags, juint
+                    long symbolPointer = dis.readLong(); // Absolute address
+
+                    // Read the symbol name using the absolute address
+                    String symbolName = readSymbolName(filePath, roRegion, symbolPointer, requestedBaseAddress);
+                    if (symbolName != null) {
+                        System.out.println("Found pattern at RW offset " + (i * 8) + 
+                            " (file offset: " + (rwRegion.fileOffset + i * 8) + ")" +
+                            ", symbol pointer: 0x" + Long.toHexString(symbolPointer) +
+                            ", symbol: " + symbolName);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Reads a symbol name from the ro region using an absolute address.
+     * Symbol format: hash_and_refcount (4 bytes), length (2 bytes), body[length] (UTF-8)
+     */
+    private static String readSymbolName(String filePath, CDSFileMapRegion roRegion, long symbolAbsoluteAddress, long requestedBaseAddress) throws IOException {
+        try (FileInputStream fis = new FileInputStream(filePath);
+             LittleEndianDataInputStream dis = new LittleEndianDataInputStream(fis)) {
+            
+            // The mapping offset in the file is relative, we need to add the base address
+            long fullMappingOffset = requestedBaseAddress + roRegion.mappingOffset;
+            
+            // Convert absolute address to file offset
+            // symbolAbsoluteAddress - fullMappingOffset = offset within RO region
+            // roRegion.fileOffset + offset = file position
+            long symbolOffset = symbolAbsoluteAddress - fullMappingOffset;
+            
+            // Verify the symbol is within the RO region bounds
+            if (symbolOffset < 0 || symbolOffset >= roRegion.used) {
+                return null;
+            }
+            
+            // Seek to the symbol location in the file
+            // directly seek to the symbol offset in ro region
+            dis.skipBytes((int) (roRegion.fileOffset + symbolOffset));
+            
+            // Skip hash_and_refcount (4 bytes)
+            dis.skipBytes(4);
+            
+            // Read length (2 bytes, little-endian, unsigned)
+            int length = dis.readShort() & 0xFFFF;
+            
+            if (length < 0 || length > 65535) {
+                return null;
+            }
+            
+            // Read the symbol body (UTF-8)
+            byte[] nameBytes = new byte[length];
+            dis.readFully(nameBytes);
+            return new String(nameBytes, StandardCharsets.UTF_8);
+        }
+    }
     
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -60,25 +136,11 @@ public class Main {
             CDSFileMapRegion[] regions = new CDSFileMapRegion[5];
             for (int i = 0; i < 5; i++) {
                 regions[i] = new CDSFileMapRegion(dis);
-                System.out.println("Region " + i + ": " + regions[i].used);
+                System.out.println("Region " + i + ": used=" + regions[i].used + 
+                    ", fileOffset=0x" + Long.toHexString(regions[i].fileOffset) +
+                    ", mappingOffset=0x" + Long.toHexString(regions[i].mappingOffset));
             }
 
-            // Extract and print class names from RO region
-            CDSFileMapRegion roRegion = regions[1]; // RO region
-            if (Long.compareUnsigned(roRegion.used, 0) > 0) {
-                System.out.println("\nExtracting class names from RO region...");
-                List<String> classNames = extractClassNames(filePath, roRegion);
-                System.out.println("\nFound " + classNames.size() + " classes:");
-                for (String className : classNames) {
-                    if (className.equals("Main")){
-                        System.out.println("  " + className);
-                    }
-                }
-            } else {
-                System.out.println("\nRO region is empty, no classes to extract.");
-            }
-
-            
             // _core_region_alignment
             long coreRegionAlignment = dis.readLong();
             System.out.println("Core region alignment: " + coreRegionAlignment);
@@ -155,6 +217,36 @@ public class Main {
             String jvmIdent = new String(jvmIdentBytes, StandardCharsets.UTF_8);
             System.out.println("JVM ident: " + jvmIdent);
 
+            // class_location_config_offset
+            long classLocationConfigOffset = dis.readLong();
+            System.out.println("Class location config offset: " + Long.toHexString(classLocationConfigOffset));
+
+            // verify_local
+            boolean verifyLocal = dis.readBoolean();
+            System.out.println("Verify local: " + verifyLocal);
+
+            // verify_remote
+            boolean verifyRemote = dis.readBoolean();
+            System.out.println("Verify remote: " + verifyRemote);
+
+            // _has_platform_or_app_classes
+            boolean hasPlatformOrAppClasses = dis.readBoolean();
+            System.out.println("Has platform or app classes: " + hasPlatformOrAppClasses);
+
+            // padding
+            dis.skipBytes(5);
+
+            // requested_base_address
+            long requestedBaseAddress = dis.readLong();
+            System.out.println("Requested base address: 0x" + Long.toHexString(requestedBaseAddress));
+            
+            // Find pattern in RW region and resolve symbols from RO region
+            CDSFileMapRegion rwRegion = regions[0]; // Region 0 is RW region
+            CDSFileMapRegion roRegion = regions[1]; // Region 1 is RO region
+            if (rwRegion.used > 0 && roRegion.readOnly != 0 && roRegion.used > 0) {
+                findAndPrintSymbols(filePath, rwRegion, roRegion, requestedBaseAddress);
+            }
+
             
         } catch (EOFException e) {
             System.out.println("Invalid AOTCache file: file too short");
@@ -163,112 +255,5 @@ public class Main {
             System.err.println("Error reading file: " + e.getMessage());
             System.exit(1);
         }
-    }
-    
-    private static List<String> extractClassNames(String filePath, CDSFileMapRegion roRegion) throws IOException {
-        List<String> classes = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        
-        try (RandomAccessFile raf = new RandomAccessFile(filePath, "r")) {
-            // Seek to RO region data
-            raf.seek(roRegion.fileOffset);
-            
-            // Read RO region data (only the used portion)
-            long used = roRegion.used;
-            if (used > Integer.MAX_VALUE) {
-                throw new IOException("RO region too large: " + used);
-            }
-            
-            byte[] roData = new byte[(int)used];
-            raf.readFully(roData);
-            
-            // Create ByteBuffer for easier parsing
-            ByteBuffer buffer = ByteBuffer.wrap(roData).order(ByteOrder.LITTLE_ENDIAN);
-            
-            // Scan for Symbol structures
-            int pos = 0;
-            int limit = buffer.limit();
-            
-            while (pos < limit - 6) { // Need at least 6 bytes (4 for hash + 2 for length)
-                try {
-                    buffer.position(pos);
-                    
-                    // Skip hash_and_refcount (4 bytes)
-                    buffer.getInt();
-                    
-                    // Read length (u2, little-endian)
-                    int length = Short.toUnsignedInt(buffer.getShort());
-                    
-                    // Validate length
-                    if (length > 0 && length < 500 && pos + 6 + length <= limit) {
-                        // Read UTF-8 bytes
-                        byte[] nameBytes = new byte[length];
-                        buffer.get(nameBytes);
-                        
-                        String name = new String(nameBytes, StandardCharsets.UTF_8);
-                        
-                        // Check if it's a class name
-                        String className = name.replace('/', '.');
-                        if (!seen.contains(className)) {
-                            seen.add(className);
-                            classes.add(className);
-                        }
-                        
-                        pos += 6 + length;
-                        pos = (pos + 7) & ~7; // Align to 8 bytes
-                    } else {
-                        pos++;
-                    }
-                } catch (Exception e) {
-                    pos++;
-                }
-            }
-        }
-        
-        return classes;
-    }
-    
-    private static boolean isClassName(String name) {
-        if (name == null || name.isEmpty() || name.length() > 200) {
-            return false;
-        }
-        
-        // Class names contain '/' (package separator) or '$' (inner class)
-        if (!name.contains("/") && !name.contains("$")) {
-            return false;
-        }
-        
-        // Class names don't contain spaces or control characters
-        for (char c : name.toCharArray()) {
-            if (Character.isISOControl(c) || c == '\0') {
-                return false;
-            }
-        }
-        
-        // Class names typically contain alphanumeric, '/', '$', '_', '.'
-        for (char c : name.toCharArray()) {
-            if (!Character.isLetterOrDigit(c) && c != '/' && c != '$' && c != '_' && c != '.') {
-                return false;
-            }
-        }
-        
-        // Must have at least one '/' or be a valid Java identifier
-        if (name.contains("/")) {
-            String[] parts = name.split("/");
-            if (parts.length < 2) {
-                return false;
-            }
-            // Last part should be a valid class name (starts with uppercase or $)
-            String lastPart = parts[parts.length - 1];
-            if (lastPart.isEmpty()) {
-                return false;
-            }
-            char firstChar = lastPart.charAt(0);
-            if (!Character.isUpperCase(firstChar) && firstChar != '$') {
-                return false;
-            }
-        }
-        
-        return true;
     }
 }
