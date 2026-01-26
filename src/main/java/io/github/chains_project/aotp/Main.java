@@ -19,15 +19,6 @@ public class Main {
         try (FileInputStream fis = new FileInputStream(filePath);
              LittleEndianDataInputStream dis = new LittleEndianDataInputStream(fis)) {
             
-            // Seek to the RW region start using FileInputStream.skip()
-            long bytesToSkip = rwRegion.fileOffset;
-            long totalSkipped = 0;
-            while (totalSkipped < bytesToSkip) {
-                long skipped = fis.skip(bytesToSkip - totalSkipped);
-                if (skipped <= 0) break;
-                totalSkipped += skipped;
-            }
-            
             // Read longs sequentially until we find the pattern in RW region
             long regionSize = rwRegion.used;
             long longsToRead = regionSize / 8;
@@ -35,9 +26,9 @@ public class Main {
             for (long i = 0; i < longsToRead; i++) {
                 long value = dis.readLong();
                 if (value == PATTERN_VALUE) {
-                    // Found the pattern in RW region, read a few more bytes for the symbol pointer
-                    // Read 8 bytes (the symbol pointer)
-                    dis.skipBytes(16); // _kind, _misc_flags, juint
+                    // Found the pattern in RW region, read 16 more bytes for the symbol pointer
+                    // https://github.com/openjdk/jdk/blob/bbae38e510efd8877daca5118f45893bb87f6eaa/src/hotspot/share/oops/klass.hpp#L120-L132
+                    dis.skipBytes(16); // _kind, _misc_flags, _super_check_offset
                     long symbolPointer = dis.readLong(); // Absolute address
 
                     // Read the symbol name using the absolute address
