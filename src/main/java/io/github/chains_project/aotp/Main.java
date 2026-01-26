@@ -106,31 +106,19 @@ public class Main {
         try (FileInputStream fis = new FileInputStream(filePath);
              LittleEndianDataInputStream dis = new LittleEndianDataInputStream(fis)) {
             
-            int magic = dis.readInt();
+            // Read the generic header
+            // https://github.com/openjdk/jdk/blob/f4607ed0a7ea2504c1d72dd3dab0b21e583fa0e7/src/hotspot/share/include/cds.h#L84
+            GenericHeader header = new GenericHeader(dis);
 
-            if (magic == AOT_MAGIC) {
+            if (header.magic == AOT_MAGIC) {
                 System.out.println("Valid AOTCache file");
             } else {
-                String actualMagic = String.format("%08x", magic);
+                String actualMagic = String.format("%08x", header.magic);
                 System.out.println("Invalid AOTCache file: magic number mismatch (actual: " + actualMagic + ")");
                 System.exit(1);
             }
 
-            // crc32 checksum
-            dis.readInt();
-
-            // version
-            int version = dis.readInt();
-            System.out.println("Version: " + version);
-
-            // header size
-            dis.skipBytes(4);
-
-            // base archive name offset
-            dis.skipBytes(4);
-
-            // base archive name size
-            dis.skipBytes(4);
+            System.out.println("Version: " + header.version);
 
             // read 5 regions
             CDSFileMapRegion[] regions = new CDSFileMapRegion[5];
