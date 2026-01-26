@@ -129,110 +129,16 @@ public class Main {
                     ", mappingOffset=0x" + Long.toHexString(regions[i].mappingOffset));
             }
 
-            // _core_region_alignment
-            long coreRegionAlignment = dis.readLong();
-            System.out.println("Core region alignment: " + coreRegionAlignment);
+            // Read the file map header
+            FileMapHeader fileMapHeader = new FileMapHeader(dis);
 
-            // _obj_alignment
-            int objAlignment = dis.readInt();
-            System.out.println("Object alignment: " + objAlignment);
-            dis.skipBytes(4);
-
-            // _narrow_oop_base
-            long narrowOopBase = dis.readLong();
-            System.out.println("Narrow oop base: " + Long.toHexString(narrowOopBase));
-
-            // _narrow_oop_shift
-            int narrowOopShift = dis.readInt();
-            System.out.println("Narrow oop shift: " + narrowOopShift);
-
-            // compact_strings
-            boolean compactStrings = dis.readBoolean();
-            System.out.println("Compact strings: " + compactStrings);
-
-            // _compact_headers
-            boolean compactHeaders = dis.readBoolean();
-            System.out.println("Compact headers: " + compactHeaders);
-
-            // 4 + 2 + 2 -> 2 bytes padding required
-            dis.skipBytes(2);
-
-            // _max_heap_size
-            long maxHeapSize = dis.readLong();
-            System.out.println("Max heap size: " + Long.toUnsignedString(maxHeapSize));
-
-            // _narrow_oop_mode
-            int narrowOopMode = dis.readInt();
-            System.out.println("Narrow oop mode: " + narrowOopMode);
-
-            // _object_streaming_mode
-            boolean objectStreamingMode = dis.readBoolean();
-            System.out.println("Object streaming mode: " + objectStreamingMode);
-
-            // _compressed_oops
-            boolean compressedOops = dis.readBoolean();
-            System.out.println("Compressed oops: " + compressedOops);
-
-            // _compressed_class_ptrs
-            boolean compressedClassPointers = dis.readBoolean();
-            System.out.println("Compressed class pointers: " + compressedClassPointers);
-
-            dis.skipBytes(1);
-
-            // _narrow_klass_pointer_bits
-            int narrowKlassPointerBits = dis.readInt();
-            System.out.println("Narrow klass pointer bits: " + narrowKlassPointerBits);
-
-            // _narrow_klass_shift
-            int narrowKlassShift = dis.readInt();
-            System.out.println("Narrow klass shift: " + narrowKlassShift);
-            
-            // _cloned_vtables_offset
-            long clonedVtablesOffset = dis.readLong();
-            System.out.println("Cloned vtables offset: " + Long.toHexString(clonedVtablesOffset));
-
-            // _early_serialized_data_offset
-            long earlySerializedDataOffset = dis.readLong();
-            System.out.println("Early serialized data offset: " + Long.toHexString(earlySerializedDataOffset));
-
-            // _serialized_data_offset
-            long serializedDataOffset = dis.readLong();
-            System.out.println("Serialized data offset: " + Long.toHexString(serializedDataOffset));
-
-            // _jvm_ident
-            byte[] jvmIdentBytes = new byte[256];
-            dis.read(jvmIdentBytes);
-            String jvmIdent = new String(jvmIdentBytes, StandardCharsets.UTF_8);
-            System.out.println("JVM ident: " + jvmIdent);
-
-            // class_location_config_offset
-            long classLocationConfigOffset = dis.readLong();
-            System.out.println("Class location config offset: " + Long.toHexString(classLocationConfigOffset));
-
-            // verify_local
-            boolean verifyLocal = dis.readBoolean();
-            System.out.println("Verify local: " + verifyLocal);
-
-            // verify_remote
-            boolean verifyRemote = dis.readBoolean();
-            System.out.println("Verify remote: " + verifyRemote);
-
-            // _has_platform_or_app_classes
-            boolean hasPlatformOrAppClasses = dis.readBoolean();
-            System.out.println("Has platform or app classes: " + hasPlatformOrAppClasses);
-
-            // padding
-            dis.skipBytes(5);
-
-            // requested_base_address
-            long requestedBaseAddress = dis.readLong();
-            System.out.println("Requested base address: 0x" + Long.toHexString(requestedBaseAddress));
+            System.out.println("Requested base address: 0x" + Long.toHexString(fileMapHeader.requestedBaseAddress));
             
             // Find pattern in RW region and resolve symbols from RO region
             CDSFileMapRegion rwRegion = regions[0]; // Region 0 is RW region
             CDSFileMapRegion roRegion = regions[1]; // Region 1 is RO region
             if (rwRegion.used > 0 && roRegion.readOnly != 0 && roRegion.used > 0) {
-                findAndPrintSymbols(filePath, rwRegion, roRegion, requestedBaseAddress);
+                findAndPrintSymbols(filePath, rwRegion, roRegion, fileMapHeader.requestedBaseAddress);
             }
 
             
