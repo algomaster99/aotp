@@ -4,6 +4,8 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import com.google.common.io.LittleEndianDataInputStream;
 
 public class Main {
@@ -13,7 +15,15 @@ public class Main {
     private static final int AOT_MAGIC = 0xf00baba2;
     
     // Pattern to search for: 0x800001080 (64-bit value, little-endian)
-    private static final long PATTERN_VALUE = 0x0000000800001080L;
+    private static final List<Long> PATTERN_VALUE = List.of(
+        0x0000000800001080L, // Instance classes
+        0x00000008000018f0L, // Array classes
+        0x0000000800001a60L, // Array classes with primitive type
+        0x0000000800001350L, // java.lang.Class
+        0x0000000800001620L, // jdk.internal.vm.StackChunk
+        0x00000008000014b8L, // References
+        0x00000008000011e8L // Classloader
+    );
     
     private static void findAndPrintSymbols(String filePath, CDSFileMapRegion rwRegion, CDSFileMapRegion roRegion, long requestedBaseAddress) throws IOException {
         try (FileInputStream fis = new FileInputStream(filePath);
@@ -25,7 +35,7 @@ public class Main {
             
             for (long i = 0; i < longsToRead; i++) {
                 long value = dis.readLong();
-                if (value == PATTERN_VALUE) {
+                if (PATTERN_VALUE.contains(value)) {
                     // Found the pattern in RW region, read 16 more bytes for the symbol pointer
                     // https://github.com/openjdk/jdk/blob/bbae38e510efd8877daca5118f45893bb87f6eaa/src/hotspot/share/oops/klass.hpp#L120-L132
                     dis.skipBytes(16); // _kind, _misc_flags, _super_check_offset
