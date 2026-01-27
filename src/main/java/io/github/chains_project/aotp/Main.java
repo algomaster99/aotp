@@ -13,15 +13,17 @@ public class Main {
     private static final int AOT_MAGIC = 0xf00baba2;
 
     // Pattern to search for: 0x800001080 (64-bit value, little-endian)
-    private static final List<Long> PATTERN_VALUE = List.of(
-            0x0000000800001080L, // Instance classes
-            0x00000008000018f0L, // Array classes
-            0x0000000800001a60L, // Array classes with primitive type
-            0x0000000800001350L, // java.lang.Class
-            0x0000000800001620L, // jdk.internal.vm.StackChunk
-            0x00000008000014b8L, // References
-            0x00000008000011e8L // Classloader
-    );
+    private static List<Long> getPatternsforClasses(long baseAddress) {
+        return List.of(
+            baseAddress + 0x0000000000001080L, // Instance classes
+            baseAddress + 0x00000000000018f0L, // Array classes
+            baseAddress + 0x0000000000001a60L, // Array classes with primitive type
+            baseAddress + 0x0000000000001350L, // java.lang.Class
+            baseAddress + 0x0000000000001620L, // jdk.internal.vm.StackChunk
+            baseAddress + 0x00000000000014b8L, // References
+            baseAddress + 0x00000000000011e8L // Classloader
+        );
+    }
 
     private static void findAndPrintClasses(LittleEndianRandomAccessFile file,
             CDSFileMapRegion rwRegion,
@@ -30,9 +32,10 @@ public class Main {
         // used does not include padding so this may not be the last long in the region
         // but we have to added padding anywhere to parse the file correctly so we
         // should be fine
+        List<Long> patterns = getPatternsforClasses(requestedBaseAddress);
         for (long i = 0; i < rwRegion.used; i += 8) {
             long value = file.readLong();
-            if (PATTERN_VALUE.contains(value)) {
+            if (patterns.contains(value)) {
                 // Found the pattern in RW region, read 16 more bytes for the symbol pointer
                 // https://github.com/openjdk/jdk/blob/bbae38e510efd8877daca5118f45893bb87f6eaa/src/hotspot/share/oops/klass.hpp#L120-L132
                 file.skipBytes(16); // _kind, _misc_flags, _super_check_offset
