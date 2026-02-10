@@ -42,28 +42,50 @@ public class Main implements Callable<Integer> {
     }
 
     private static void findAndPrintClasses(LittleEndianRandomAccessFile file,
-            CDSFileMapRegion rwRegion,
-            long requestedBaseAddress) throws IOException {
-        // Read longs sequentially until we find the pattern in RW region
-        // used does not include padding so this may not be the last long in the region
-        // but we have to added padding anywhere to parse the file correctly so we
-        // should be fine
-        List<Long> patterns = getPatternsforClasses(requestedBaseAddress);
-        for (long i = 0; i < rwRegion.used; i += 8) {
-            long value = file.readLong();
-            if (patterns.contains(value)) {
-                // Found the pattern in RW region, read 16 more bytes for the symbol pointer
-                // https://github.com/openjdk/jdk/blob/bbae38e510efd8877daca5118f45893bb87f6eaa/src/hotspot/share/oops/klass.hpp#L120-L132
-                file.skipBytes(16); // _kind, _misc_flags, _super_check_offset
-                long symbolPointer = file.readLong(); // Absolute address
+                                            RegionData rwRegionData,
+                                            long requestedBaseAddress) throws IOException {
+        byte[] bytes = rwRegionData.bytes();
+        if (bytes.length == 0) {
+            return;
+        }
 
-                // Read the symbol name using the absolute address
-                String className = readSymbolName(file, symbolPointer, requestedBaseAddress);
-                if (className != null) {
-                    System.out.println(className);
-                }
+        // Scan the RW region bytes 8-bytes at a time for the klass vtable patterns.
+        List<Long> patterns = getPatternsforClasses(requestedBaseAddress);
+        final int len = bytes.length;
+
+        for (int offset = 0; offset + 8 <= len; offset += 8) {
+            long value = readLongLE(bytes, offset);
+            if (!patterns.contains(value)) {
+                continue;
+            }
+
+            // Found the pattern in RW region, read 16 more bytes for the symbol pointer
+            // https://github.com/openjdk/jdk/blob/bbae38e510efd8877daca5118f45893bb87f6eaa/src/hotspot/share/oops/klass.hpp#L120-L132
+            int symbolPtrOffset = offset + 8 + 16; // skip vtable ptr + _kind, _misc_flags, _super_check_offset
+            if (symbolPtrOffset + 8 > len) {
+                // Not enough bytes remaining in this region to read the symbol pointer.
+                continue;
+            }
+
+            long symbolPointer = readLongLE(bytes, symbolPtrOffset); // Absolute address
+
+            // Read the symbol name using the absolute address from the full file.
+            String className = readSymbolName(file, symbolPointer, requestedBaseAddress);
+            if (className != null) {
+                System.out.println(className);
             }
         }
+    }
+
+    private static long readLongLE(byte[] bytes, int offset) {
+        return ((long) bytes[offset] & 0xFF)
+             | (((long) bytes[offset + 1] & 0xFF) << 8)
+             | (((long) bytes[offset + 2] & 0xFF) << 16)
+             | (((long) bytes[offset + 3] & 0xFF) << 24)
+             | (((long) bytes[offset + 4] & 0xFF) << 32)
+             | (((long) bytes[offset + 5] & 0xFF) << 40)
+             | (((long) bytes[offset + 6] & 0xFF) << 48)
+             | (((long) bytes[offset + 7] & 0xFF) << 56);
     }
 
     /**
@@ -142,9 +164,9 @@ public class Main implements Callable<Integer> {
             }
 
             if (showClasses) {
-                CDSFileMapRegion rwRegion = regions[0]; // Region 0 is RW region
-                if (rwRegion.used > 0) {
-                    findAndPrintClasses(file, rwRegion, fileMapHeader.requestedBaseAddress);
+                RegionData rwRegionData = regionData[0]; // Region 0 is RW region
+                if (rwRegionData.bytes().length > 0) {
+                    findAndPrintClasses(file, rwRegionData, fileMapHeader.requestedBaseAddress);
                 }
             }
 
