@@ -133,6 +133,10 @@ public class Main implements Callable<Integer> {
             // Read the file map header
             FileMapHeader fileMapHeader = new FileMapHeader(file);
 
+            // Snapshot raw bytes for each region so later analyses don't have
+            // to seek around in the underlying file.
+            RegionData[] regionData = RegionData.loadAll(file, regions);
+
             if (showHeader) {
                 FileMapHeader.print(genericHeader, regions, fileMapHeader, System.out);
             }

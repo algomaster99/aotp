@@ -33,6 +33,8 @@ record ArchiveStreamedHeapHeader(
 // https://github.com/openjdk/jdk/blob/f4607ed0a7ea2504c1d72dd3dab0b21e583fa0e7/src/hotspot/share/cds/filemap.hpp#L102
 public class FileMapHeader {
     long coreRegionAlignment;
+    // this is not used for alignment, but it is some value that used at runtime for verification check
+    // https://github.com/openjdk/jdk/blob/f4607ed0a7ea2504c1d72dd3dab0b21e583fa0e7/src/hotspot/share/cds/filemap.cpp#L1786
     int objAlignment;
     long narrowOopBase;
     int narrowOopShift;
