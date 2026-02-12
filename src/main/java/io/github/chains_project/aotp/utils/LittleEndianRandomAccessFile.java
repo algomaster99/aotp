@@ -1,4 +1,4 @@
-package io.github.chains_project.aotp;
+package io.github.chains_project.aotp.utils;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;

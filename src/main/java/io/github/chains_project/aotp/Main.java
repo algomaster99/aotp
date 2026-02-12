@@ -13,6 +13,8 @@ import io.github.chains_project.aotp.header.FileMapHeader;
 import io.github.chains_project.aotp.header.GenericHeader;
 import io.github.chains_project.aotp.header.RegionData;
 import io.github.chains_project.aotp.oops.klass.InstanceClass;
+import io.github.chains_project.aotp.utils.ByteReader;
+import io.github.chains_project.aotp.utils.LittleEndianRandomAccessFile;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -60,7 +62,7 @@ public class Main implements Callable<Integer> {
         final int len = bytes.length;
 
         for (int offset = 0; offset + 8 <= len; offset += 8) {
-            long value = readLongLE(bytes, offset);
+            long value = ByteReader.readLongLE(bytes, offset);
             if (!patterns.contains(value)) {
                 continue;
             }
@@ -74,17 +76,6 @@ public class Main implements Callable<Integer> {
                 System.out.println(className);
             }
         }
-    }
-
-    private static long readLongLE(byte[] bytes, int offset) {
-        return ((long) bytes[offset] & 0xFF)
-             | (((long) bytes[offset + 1] & 0xFF) << 8)
-             | (((long) bytes[offset + 2] & 0xFF) << 16)
-             | (((long) bytes[offset + 3] & 0xFF) << 24)
-             | (((long) bytes[offset + 4] & 0xFF) << 32)
-             | (((long) bytes[offset + 5] & 0xFF) << 40)
-             | (((long) bytes[offset + 6] & 0xFF) << 48)
-             | (((long) bytes[offset + 7] & 0xFF) << 56);
     }
 
     /**

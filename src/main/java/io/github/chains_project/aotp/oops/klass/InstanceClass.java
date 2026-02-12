@@ -1,5 +1,7 @@
 package io.github.chains_project.aotp.oops.klass;
 
+import io.github.chains_project.aotp.utils.ByteReader;
+
 record InstanceClassFlags(short flags, byte status) { }
 
 /**
@@ -206,12 +208,12 @@ public final class InstanceClass extends ClassEntry {
         int pos = offset;
 
         // created by the compiler to support dynamic polymorphism
-        long vTablePointer = readLongLE(bytes, pos);
+        long vTablePointer = ByteReader.readLongLE(bytes, pos);
         pos += 8;
 
-        int layoutHelper = readIntLE(bytes, pos);
+        int layoutHelper = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        short kind = readShortLE(bytes, pos);
+        short kind = ByteReader.readShortLE(bytes, pos);
         pos += 2;
         byte miscFlags = (byte) bytes[pos];
         pos += 1;
@@ -219,146 +221,146 @@ public final class InstanceClass extends ClassEntry {
         // 1-byte padding
         pos += 1;
         
-        int superCheckOffset = readIntLE(bytes, pos);
+        int superCheckOffset = ByteReader.readIntLE(bytes, pos);
         pos += 4;
         // 4-byte padding after superCheckOffset
         pos += 4;
 
-        long name = readLongLE(bytes, pos);
+        long name = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long secondarySuperCache = readLongLE(bytes, pos);
+        long secondarySuperCache = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long secondarySupers = readLongLE(bytes, pos);
+        long secondarySupers = ByteReader.readLongLE(bytes, pos);
         pos += 8;
         long[] primarySupers = new long[8];
         for (int i = 0; i < 8; i++) {
-            primarySupers[i] = readLongLE(bytes, pos);
+            primarySupers[i] = ByteReader.readLongLE(bytes, pos);
             pos += 8;
         }
-        long javaMirror = readLongLE(bytes, pos);
+        long javaMirror = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long superKlass = readLongLE(bytes, pos);
+        long superKlass = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long subklass = readLongLE(bytes, pos);
+        long subklass = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long nextSibling = readLongLE(bytes, pos);
+        long nextSibling = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long nextLink = readLongLE(bytes, pos);
+        long nextLink = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long classLoaderData = readLongLE(bytes, pos);
+        long classLoaderData = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long prototypeHeader = readLongLE(bytes, pos);
+        long prototypeHeader = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long secondarySupersBitmap = readLongLE(bytes, pos);
+        long secondarySupersBitmap = ByteReader.readLongLE(bytes, pos);
         pos += 8;
         byte hashSlot = (byte) bytes[pos];
         pos += 1;
-        short sharedClassPathIndex = readShortLE(bytes, pos);
+        short sharedClassPathIndex = ByteReader.readShortLE(bytes, pos);
         pos += 2;        
-        short aotClassFlags = readShortLE(bytes, pos);
+        short aotClassFlags = ByteReader.readShortLE(bytes, pos);
         pos += 2;
 
         pos += 3;
 
-        int vtableLen = readIntLE(bytes, pos);
+        int vtableLen = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        int archivedMirrorIndex = readIntLE(bytes, pos);
+        int archivedMirrorIndex = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        long jfrTrace = readLongLE(bytes, pos);
+        long jfrTrace = ByteReader.readLongLE(bytes, pos);
         pos += 8;
 
-        long annotations = readLongLE(bytes, pos);
+        long annotations = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long packageEntry = readLongLE(bytes, pos);
+        long packageEntry = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long arrayKlasses = readLongLE(bytes, pos);
+        long arrayKlasses = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long constants = readLongLE(bytes, pos);
+        long constants = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long innerClasses = readLongLE(bytes, pos);
+        long innerClasses = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long nestMembers = readLongLE(bytes, pos);
+        long nestMembers = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long nestHost = readLongLE(bytes, pos);
+        long nestHost = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long permittedSubclasses = readLongLE(bytes, pos);
+        long permittedSubclasses = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long recordComponents = readLongLE(bytes, pos);
+        long recordComponents = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long sourceDebugExtension = readLongLE(bytes, pos);
+        long sourceDebugExtension = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        int nonStaticFieldSize = readIntLE(bytes, pos);
+        int nonStaticFieldSize = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        int staticFieldSize = readIntLE(bytes, pos);
+        int staticFieldSize = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        int nonStaticOopMapSize = readIntLE(bytes, pos);
+        int nonStaticOopMapSize = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        int itableLen = readIntLE(bytes, pos);
+        int itableLen = ByteReader.readIntLE(bytes, pos);
         pos += 4;
-        short nestHostIndex = readShortLE(bytes, pos);
+        short nestHostIndex = ByteReader.readShortLE(bytes, pos);
         pos += 2;
-        short thisClassIndex = readShortLE(bytes, pos);
+        short thisClassIndex = ByteReader.readShortLE(bytes, pos);
         pos += 2;
-        short staticOopFieldCount = readShortLE(bytes, pos);
+        short staticOopFieldCount = ByteReader.readShortLE(bytes, pos);
         pos += 2;
-        short idnumAllocatedCount = readShortLE(bytes, pos);
+        short idnumAllocatedCount = ByteReader.readShortLE(bytes, pos);
         pos += 2;
         byte initState = (byte) bytes[pos];
         pos += 1;
         byte referenceType = (byte) bytes[pos];
         pos += 1;
-        short accessFlags = readShortLE(bytes, pos);
+        short accessFlags = ByteReader.readShortLE(bytes, pos);
         pos += 2;
-        short flagsForInstanceKlass = readShortLE(bytes, pos);
+        short flagsForInstanceKlass = ByteReader.readShortLE(bytes, pos);
         pos += 2;
         byte statusForInstanceKlass = (byte) bytes[pos];
         pos += 1;
         InstanceClassFlags miscFlags_fromInstanceKlass = new InstanceClassFlags(flagsForInstanceKlass, statusForInstanceKlass);
 
         pos += 1;
-        long initThread = readLongLE(bytes, pos);
+        long initThread = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long oopMapCache = readLongLE(bytes, pos);
+        long oopMapCache = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long jniIds = readLongLE(bytes, pos);
+        long jniIds = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long methodsJmethodIds = readLongLE(bytes, pos);
+        long methodsJmethodIds = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long depContext = readLongLE(bytes, pos);
+        long depContext = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long depContextLastCleaned = readLongLE(bytes, pos);
+        long depContextLastCleaned = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long osrNmethodsHead = readLongLE(bytes, pos);
+        long osrNmethodsHead = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long breakpoints = readLongLE(bytes, pos);
+        long breakpoints = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long previousVersions = readLongLE(bytes, pos);
+        long previousVersions = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long cachedClassFile = readLongLE(bytes, pos);
+        long cachedClassFile = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long jvmtiCachedClassFieldMap = readLongLE(bytes, pos);
+        long jvmtiCachedClassFieldMap = ByteReader.readLongLE(bytes, pos);
         pos += 8;
         // int verifyCount = readIntLE(bytes, pos);
         // pos += 4;
         // int sharedClassLoadCount = readIntLE(bytes, pos);
         // pos += 4;
-        long methods = readLongLE(bytes, pos);
+        long methods = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long defaultMethods = readLongLE(bytes, pos);
+        long defaultMethods = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long localInterfaces = readLongLE(bytes, pos);
+        long localInterfaces = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long transitiveInterfaces = readLongLE(bytes, pos);
+        long transitiveInterfaces = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long methodOrdering = readLongLE(bytes, pos);
+        long methodOrdering = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long defaultVtableIndices = readLongLE(bytes, pos);
+        long defaultVtableIndices = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long fieldInfoStream = readLongLE(bytes, pos);
+        long fieldInfoStream = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long fieldInfoSearchTable = readLongLE(bytes, pos);
+        long fieldInfoSearchTable = ByteReader.readLongLE(bytes, pos);
         pos += 8;
-        long fieldsStatus = readLongLE(bytes, pos);
+        long fieldsStatus = ByteReader.readLongLE(bytes, pos);
         pos += 8;
 
         return new InstanceClass(vTablePointer,
@@ -428,29 +430,6 @@ public final class InstanceClass extends ClassEntry {
                                  fieldInfoStream,
                                  fieldInfoSearchTable,
                                  fieldsStatus);
-    }
-
-    private static short readShortLE(byte[] bytes, int offset) {
-        return (short) ((bytes[offset] & 0xFF)
-             | ((bytes[offset + 1] & 0xFF) << 8));
-    }
-
-    private static int readIntLE(byte[] bytes, int offset) {
-        return (bytes[offset] & 0xFF)
-             | ((bytes[offset + 1] & 0xFF) << 8)
-             | ((bytes[offset + 2] & 0xFF) << 16)
-             | ((bytes[offset + 3] & 0xFF) << 24);
-    }
-
-    private static long readLongLE(byte[] bytes, int offset) {
-        return ((long) bytes[offset] & 0xFF)
-             | (((long) bytes[offset + 1] & 0xFF) << 8)
-             | (((long) bytes[offset + 2] & 0xFF) << 16)
-             | (((long) bytes[offset + 3] & 0xFF) << 24)
-             | (((long) bytes[offset + 4] & 0xFF) << 32)
-             | (((long) bytes[offset + 5] & 0xFF) << 40)
-             | (((long) bytes[offset + 6] & 0xFF) << 48)
-             | (((long) bytes[offset + 7] & 0xFF) << 56);
     }
 }
 
