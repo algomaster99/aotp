@@ -3,6 +3,8 @@ package io.github.chains_project.aotp;
 /**
  * Base representation of a HotSpot {@code Klass} record in the RW region.
  * https://github.com/openjdk/jdk/blob/62c7e9aefd4320d9d0cd8fa10610f59abb4de670/src/hotspot/share/oops/klass.hpp#L62
+ * 
+ * This has fixed size of 117 bytes including padding.
  */
 public abstract class ClassEntry {
 
@@ -25,8 +27,8 @@ public abstract class ClassEntry {
     public final byte hashSlot;
 
     protected ClassEntry(int layoutHelper,
-                         int kind,
-                         long miscFlags,
+                         short kind,
+                         byte miscFlags,
                          int superCheckOffset,
                          long _name,
                          long secondarySuperCache,

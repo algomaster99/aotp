@@ -7,8 +7,8 @@ package io.github.chains_project.aotp;
 public final class InstanceClass extends ClassEntry {
 
     private InstanceClass(int layoutHelper,
-                          int kind,
-                          long miscFlags,
+                          short kind,
+                          byte miscFlags,
                           int superCheckOffset,
                           long name,
                           long secondarySuperCache,
@@ -50,17 +50,23 @@ public final class InstanceClass extends ClassEntry {
     public static InstanceClass parse(byte[] bytes, int offset) {
         int pos = offset;
 
-        int layoutHelper = readIntLE(bytes, pos);
-        pos += 4;
-        int kind = readIntLE(bytes, pos);
-        pos += 4;
-        long miscFlags = readLongLE(bytes, pos);
+        // created by the compiler to support dynamic polymorphism
+        long vTablePointer = readLongLE(bytes, pos);
         pos += 8;
 
-        // 4-byte padding before superCheckOffset
+        int layoutHelper = readIntLE(bytes, pos);
         pos += 4;
+        short kind = readShortLE(bytes, pos);
+        pos += 2;
+        byte miscFlags = (byte) bytes[pos];
+        pos += 1;
 
+        // 1-byte padding
+        pos += 1;
+        
         int superCheckOffset = readIntLE(bytes, pos);
+        pos += 4;
+        // 4-byte padding after superCheckOffset
         pos += 4;
 
         long name = readLongLE(bytes, pos);
@@ -107,6 +113,11 @@ public final class InstanceClass extends ClassEntry {
                                  prototypeHeader,
                                  secondarySupersBitmap,
                                  hashSlot);
+    }
+
+    private static short readShortLE(byte[] bytes, int offset) {
+        return (short) ((bytes[offset] & 0xFF)
+             | ((bytes[offset + 1] & 0xFF) << 8));
     }
 
     private static int readIntLE(byte[] bytes, int offset) {
