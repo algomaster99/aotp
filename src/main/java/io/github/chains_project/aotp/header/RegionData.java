@@ -1,6 +1,8 @@
-package io.github.chains_project.aotp;
+package io.github.chains_project.aotp.header;
 
 import java.io.IOException;
+
+import io.github.chains_project.aotp.LittleEndianRandomAccessFile;
 
 /**
  * Holds the raw bytes for a single CDS/AOT region together with its

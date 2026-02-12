@@ -1,7 +1,9 @@
-package io.github.chains_project.aotp;
+package io.github.chains_project.aotp.header;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
+import io.github.chains_project.aotp.LittleEndianRandomAccessFile;
 
 record HeapRootSegments(
     long baseOffset,
@@ -55,7 +57,7 @@ public class FileMapHeader {
     boolean verifyLocal;
     boolean verifyRemote;
     boolean hasPlatformOrAppClasses;
-    long requestedBaseAddress;
+    private long requestedBaseAddress;
     long mappedBaseAddress;
     boolean useOptimizedModuleHandling;
     boolean hasAotLinkedClasses;
@@ -210,5 +212,9 @@ public class FileMapHeader {
         st.append(String.format("- use_optimized_module_handling:            %d%n", useOptimizedModuleHandling ? 1 : 0));
         st.append(String.format("- has_full_module_graph:                    %d%n", hasFullModuleGraph ? 1 : 0));
         st.append(String.format("- has_aot_linked_classes:                   %d%n", hasAotLinkedClasses ? 1 : 0));
+    }
+
+    public long requestedBaseAddress() {
+        return requestedBaseAddress;
     }
 }

@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import io.github.chains_project.aotp.header.CDSFileMapRegion;
+import io.github.chains_project.aotp.header.FileMapHeader;
+import io.github.chains_project.aotp.header.GenericHeader;
+import io.github.chains_project.aotp.header.RegionData;
+import io.github.chains_project.aotp.oops.klass.InstanceClass;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -134,8 +139,8 @@ public class Main implements Callable<Integer> {
             // https://github.com/openjdk/jdk/blob/f4607ed0a7ea2504c1d72dd3dab0b21e583fa0e7/src/hotspot/share/include/cds.h#L84
             GenericHeader genericHeader = new GenericHeader(file);
 
-            if (genericHeader.magic != AOT_MAGIC) {
-                String actualMagic = String.format("%08x", genericHeader.magic);
+            if (genericHeader.magic() != AOT_MAGIC) {
+                String actualMagic = String.format("%08x", genericHeader.magic());
                 System.out.println("Invalid AOTCache file: magic number mismatch (actual: " + actualMagic + ")");
                 return 1;
             }
@@ -160,7 +165,7 @@ public class Main implements Callable<Integer> {
             if (showClasses) {
                 RegionData rwRegionData = regionData[0]; // Region 0 is RW region
                 if (rwRegionData.bytes().length > 0) {
-                    findAndPrintClasses(file, rwRegionData, fileMapHeader.requestedBaseAddress);
+                    findAndPrintClasses(file, rwRegionData, fileMapHeader.requestedBaseAddress());
                 }
             }
 

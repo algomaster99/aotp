@@ -1,9 +1,11 @@
-package io.github.chains_project.aotp;
+package io.github.chains_project.aotp.header;
 
 import java.io.IOException;
 
+import io.github.chains_project.aotp.LittleEndianRandomAccessFile;
+
 public class GenericHeader {
-    int magic;
+    private int magic;
     int crc;
     int version;
     int headerSize;
@@ -26,5 +28,9 @@ public class GenericHeader {
         st.append(String.format("- header_size:                    %d%n", headerSize));
         st.append(String.format("- base_archive_name_offset:       %d%n", baseArchivePathOffset));
         st.append(String.format("- base_archive_name_size:         %d%n", baseArchiveNameSize));
+    }
+
+    public int magic() {
+        return magic;
     }
 }

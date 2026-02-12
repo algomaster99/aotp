@@ -1,4 +1,4 @@
-package io.github.chains_project.aotp;
+package io.github.chains_project.aotp.oops.klass;
 
 /**
  * Base representation of a HotSpot {@code Klass} record in the RW region.

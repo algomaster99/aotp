@@ -1,4 +1,4 @@
-package io.github.chains_project.aotp;
+package io.github.chains_project.aotp.oops.klass;
 
 record InstanceClassFlags(short flags, byte status) { }
 
