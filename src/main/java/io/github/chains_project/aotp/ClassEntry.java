@@ -4,10 +4,11 @@ package io.github.chains_project.aotp;
  * Base representation of a HotSpot {@code Klass} record in the RW region.
  * https://github.com/openjdk/jdk/blob/62c7e9aefd4320d9d0cd8fa10610f59abb4de670/src/hotspot/share/oops/klass.hpp#L62
  * 
- * This has fixed size of 126 bytes including padding.
+ * This has fixed size of 204 bytes including padding.
  */
 public abstract class ClassEntry {
 
+    public final long vTablePointer;
     public final int layoutHelper;
     public final int kind;
     public final long miscFlags;
@@ -15,7 +16,7 @@ public abstract class ClassEntry {
     public final long _name; // symbol pointer (absolute address)
     public final long secondarySuperCache;
     public final long secondarySupers;
-    public final long primarySupers;
+    public final long[] primarySupers;
     public final long javaMirror; // this is oopHandle but it basically stores a pointer to oop
     public final long _super;
     public final long subklass;
@@ -23,20 +24,23 @@ public abstract class ClassEntry {
     public final long nextLink;
     public final long classLoaderData;
     public final long prototypeHeader;
-    public final int secondarySupersBitmap;
+    public final long secondarySupersBitmap;
     public final byte hashSlot;
     public final short sharedClassPathIndex;
     public final short aotClassFlags;
     public final int vtableLen;
+    public final long archivedMirrorIndex;
+    public final long jfrTrace;
 
-    protected ClassEntry(int layoutHelper,
+    protected ClassEntry(long vTablePointer,
+                         int layoutHelper,
                          short kind,
                          byte miscFlags,
                          int superCheckOffset,
                          long _name,
                          long secondarySuperCache,
                          long secondarySupers,
-                         long primarySupers,
+                         long[] primarySupers,
                          long javaMirror,
                          long _super,
                          long subklass,
@@ -44,11 +48,14 @@ public abstract class ClassEntry {
                          long nextLink,
                          long classLoaderData,
                          long prototypeHeader,
-                         int secondarySupersBitmap,
+                         long secondarySupersBitmap,
                          byte hashSlot,
                          short sharedClassPathIndex,
                          short aotClassFlags,
-                         int vtableLen) {
+                         int vtableLen,
+                         long archivedMirrorIndex,
+                         long jfrTrace) {
+        this.vTablePointer = vTablePointer;
         this.layoutHelper = layoutHelper;
         this.kind = kind;
         this.miscFlags = miscFlags;
@@ -56,7 +63,9 @@ public abstract class ClassEntry {
         this._name = _name;
         this.secondarySuperCache = secondarySuperCache;
         this.secondarySupers = secondarySupers;
-        this.primarySupers = primarySupers;
+        // _primary_super_limit = 8
+        this.primarySupers = new long[8];
+        System.arraycopy(primarySupers, 0, this.primarySupers, 0, 8);
         this.javaMirror = javaMirror;
         this._super = _super;
         this.subklass = subklass;
@@ -69,6 +78,8 @@ public abstract class ClassEntry {
         this.sharedClassPathIndex = sharedClassPathIndex;
         this.aotClassFlags = aotClassFlags;
         this.vtableLen = vtableLen;
+        this.archivedMirrorIndex = archivedMirrorIndex;
+        this.jfrTrace = jfrTrace;
     }
 
     /**

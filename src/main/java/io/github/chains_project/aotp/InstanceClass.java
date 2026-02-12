@@ -6,14 +6,15 @@ package io.github.chains_project.aotp;
  */
 public final class InstanceClass extends ClassEntry {
 
-    private InstanceClass(int layoutHelper,
+    private InstanceClass(long vTablePointer,
+                          int layoutHelper,
                           short kind,
                           byte miscFlags,
                           int superCheckOffset,
                           long name,
                           long secondarySuperCache,
                           long secondarySupers,
-                          long primarySupers,
+                          long[] primarySupers,
                           long javaMirror,
                           long superKlass,
                           long subklass,
@@ -21,12 +22,15 @@ public final class InstanceClass extends ClassEntry {
                           long nextLink,
                           long classLoaderData,
                           long prototypeHeader,
-                          int secondarySupersBitmap,
+                          long secondarySupersBitmap,
                           byte hashSlot,
                           short sharedClassPathIndex,
                           short aotClassFlags,
-                          int vtableLen) {
-        super(layoutHelper,
+                          int vtableLen,
+                          long archivedMirrorIndex,
+                          long jfrTrace) {
+        super(vTablePointer,
+              layoutHelper,
               kind,
               miscFlags,
               superCheckOffset,
@@ -45,7 +49,9 @@ public final class InstanceClass extends ClassEntry {
               hashSlot,
               sharedClassPathIndex,
               aotClassFlags,
-              vtableLen);
+              vtableLen,
+              archivedMirrorIndex,
+              jfrTrace);
     }
 
     /**
@@ -81,8 +87,11 @@ public final class InstanceClass extends ClassEntry {
         pos += 8;
         long secondarySupers = readLongLE(bytes, pos);
         pos += 8;
-        long primarySupers = readLongLE(bytes, pos);
-        pos += 8;
+        long[] primarySupers = new long[8];
+        for (int i = 0; i < 8; i++) {
+            primarySupers[i] = readLongLE(bytes, pos);
+            pos += 8;
+        }
         long javaMirror = readLongLE(bytes, pos);
         pos += 8;
         long superKlass = readLongLE(bytes, pos);
@@ -97,21 +106,26 @@ public final class InstanceClass extends ClassEntry {
         pos += 8;
         long prototypeHeader = readLongLE(bytes, pos);
         pos += 8;
-        int secondarySupersBitmap = readIntLE(bytes, pos);
-        pos += 4;
+        long secondarySupersBitmap = readLongLE(bytes, pos);
+        pos += 8;
         byte hashSlot = (byte) bytes[pos];
         pos += 1;
         short sharedClassPathIndex = readShortLE(bytes, pos);
-        pos += 2;
-        
-        pos += 1;
-
+        pos += 2;        
         short aotClassFlags = readShortLE(bytes, pos);
         pos += 2;
+
+        pos += 3;
+
         int vtableLen = readIntLE(bytes, pos);
         pos += 4;
+        long archivedMirrorIndex = readLongLE(bytes, pos);
+        pos += 8;
+        long jfrTrace = readLongLE(bytes, pos);
+        pos += 8;
 
-        return new InstanceClass(layoutHelper,
+        return new InstanceClass(vTablePointer,
+                                 layoutHelper,
                                  kind,
                                  miscFlags,
                                  superCheckOffset,
@@ -130,7 +144,9 @@ public final class InstanceClass extends ClassEntry {
                                  hashSlot,
                                  sharedClassPathIndex,
                                  aotClassFlags,
-                                 vtableLen);
+                                 vtableLen,
+                                 archivedMirrorIndex,
+                                 jfrTrace);
     }
 
     private static short readShortLE(byte[] bytes, int offset) {
