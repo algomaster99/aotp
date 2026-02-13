@@ -13,12 +13,12 @@ public abstract class ClassEntry {
     public final int kind;
     public final long miscFlags;
     public final int superCheckOffset;
-    public final long _name; // symbol pointer (absolute address)
+    public final long name; // symbol pointer (absolute address)
     public final long secondarySuperCache;
     public final long secondarySupers;
     public final long[] primarySupers;
     public final long javaMirror; // this is oopHandle but it basically stores a pointer to oop
-    public final long _super;
+    public final long superKlass;
     public final long subklass;
     public final long nextSibling;
     public final long nextLink;
@@ -37,12 +37,12 @@ public abstract class ClassEntry {
                          short kind,
                          byte miscFlags,
                          int superCheckOffset,
-                         long _name,
+                         long name,
                          long secondarySuperCache,
                          long secondarySupers,
                          long[] primarySupers,
                          long javaMirror,
-                         long _super,
+                         long superKlass,
                          long subklass,
                          long nextSibling,
                          long nextLink,
@@ -60,14 +60,14 @@ public abstract class ClassEntry {
         this.kind = kind;
         this.miscFlags = miscFlags;
         this.superCheckOffset = superCheckOffset;
-        this._name = _name;
+        this.name = name;
         this.secondarySuperCache = secondarySuperCache;
         this.secondarySupers = secondarySupers;
         // _primary_super_limit = 8
         this.primarySupers = new long[8];
         System.arraycopy(primarySupers, 0, this.primarySupers, 0, 8);
         this.javaMirror = javaMirror;
-        this._super = _super;
+        this.superKlass = superKlass;
         this.subklass = subklass;
         this.nextSibling = nextSibling;
         this.nextLink = nextLink;
@@ -86,7 +86,7 @@ public abstract class ClassEntry {
      * Convenience accessor for the class name symbol pointer.
      */
     public long namePointer() {
-        return _name;
+        return name;
     }
 }
 
