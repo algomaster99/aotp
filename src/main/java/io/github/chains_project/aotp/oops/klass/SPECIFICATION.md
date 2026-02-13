@@ -99,8 +99,8 @@ and follow the same “pointer → `long` address” convention.
 | `InstanceKlass* _previous_versions` (JVMTI)                  | `long previousVersions`                                      |
 | `JvmtiCachedClassFileData* _cached_class_file` (JVMTI)       | `long cachedClassFile`                                       |
 | `JvmtiCachedClassFieldMap* _jvmti_cached_class_field_map`    | `long jvmtiCachedClassFieldMap`                              |
-| `NOT_PRODUCT(int _verify_count;)`                            | *not modeled* (commented out in Java)                        |
-| `NOT_PRODUCT(volatile int _shared_class_load_count;)`        | *not modeled* (commented out in Java)                        |
+| `NOT_PRODUCT(int _verify_count;)`                            | *not modeled* †                                               |
+| `NOT_PRODUCT(volatile int _shared_class_load_count;)`        | *not modeled* †                                               |
 | `Array* _methods`                                            | `long methods`                                               |
 | `Array* _default_methods`                                    | `long defaultMethods`                                        |
 | `Array* _local_interfaces`                                   | `long localInterfaces`                                       |
@@ -111,3 +111,5 @@ and follow the same “pointer → `long` address” convention.
 | `Array* _fieldinfo_search_table`                             | `long fieldInfoSearchTable`                                  |
 | `Array* _fields_status`                                      | `long fieldsStatus`                                          |
 
+> † These fields are not modeled in Java because they are only available in DEBUG builds
+> and [AOT Cache features do not exist in DEBUG builds](https://bugs.openjdk.org/browse/JDK-8301715).
