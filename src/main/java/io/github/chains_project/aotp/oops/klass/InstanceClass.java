@@ -11,6 +11,8 @@ record InterfaceDescriptor(long klass, long itableIndex) {}
 
 record ITable(List<InterfaceDescriptor> interfaces, long[] overridenMethods) { }
 
+record OopMapBlock(int offset, int count) {}
+
 /**
  * Concrete {@link ClassEntry} representing an instance Klass.
  * https://github.com/openjdk/jdk/blob/62c7e9aefd4320d9d0cd8fa10610f59abb4de670/src/hotspot/share/oops/instanceKlass.hpp#L134
@@ -71,7 +73,7 @@ public final class InstanceClass extends ClassEntry {
     public final long[] vtable;
     public final ITable itable;
     public final long[] staticField;
-    public final long[] nonStaticOopMapBlock;
+    public final List<OopMapBlock> nonStaticOopMapBlock;
     // TODO: embedded implementor of this interface follows here
     // This only exists if the current klass is an interface.
 
@@ -147,7 +149,7 @@ public final class InstanceClass extends ClassEntry {
                           long[] vtable,
                           ITable itable,
                           long[] staticField,
-                          long[] nonStaticOopMapBlock) {
+                          List<OopMapBlock> nonStaticOopMapBlock) {
         super(vTablePointer,
               layoutHelper,
               kind,
@@ -420,10 +422,13 @@ public final class InstanceClass extends ClassEntry {
         //     pos += 8;
         // }
 
-        long[] nonStaticOopMapBlock = new long[nonStaticOopMapSize];
+        List<OopMapBlock> nonStaticOopMapBlock = new ArrayList<>();
         for (int i = 0; i < nonStaticOopMapSize; i++) {
-            nonStaticOopMapBlock[i] = ByteReader.readLongLE(bytes, pos);
-            pos += 8;
+            int oopMapBlockOffset = ByteReader.readIntLE(bytes, pos);
+            pos += 4;
+            int oopMapBlockCount = ByteReader.readIntLE(bytes, pos);
+            pos += 4;
+            nonStaticOopMapBlock.add(new OopMapBlock(oopMapBlockOffset, oopMapBlockCount));
         }
 
         return new InstanceClass(vTablePointer,
@@ -500,7 +505,7 @@ public final class InstanceClass extends ClassEntry {
     }
 
     public int getSize() {
-        return super.getSize() + 272 + vtable.length * 8 + itableLen * 8 + nonStaticOopMapBlock.length * (4+4);
+        return super.getSize() + 272 + vtable.length * 8 + itableLen * 8 + nonStaticOopMapSize * 8;
     }
 }
 
