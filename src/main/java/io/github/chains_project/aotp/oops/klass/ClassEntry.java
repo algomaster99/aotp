@@ -88,5 +88,9 @@ public abstract class ClassEntry {
     public long namePointer() {
         return name;
     }
+
+    public int getSize() {
+        return 200;
+    }
 }
 

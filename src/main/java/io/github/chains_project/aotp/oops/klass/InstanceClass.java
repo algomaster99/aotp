@@ -474,5 +474,9 @@ public final class InstanceClass extends ClassEntry {
                                  staticField,
                                  nonStaticOopMapBlock);
     }
+
+    public int getSize() {
+        return super.getSize() + 272 + vtable.length * 8 + itable.length * 8 + staticField.length * 8 + nonStaticOopMapBlock.length * 8;
+    }
 }
 
