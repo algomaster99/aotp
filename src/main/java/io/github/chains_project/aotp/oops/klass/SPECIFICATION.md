@@ -111,7 +111,7 @@ and follow the same “pointer → `long` address” convention.
 | `Array* _fieldinfo_search_table`                             | `long fieldInfoSearchTable`                                  |
 | `Array* _fields_status`                                      | `long fieldsStatus`                                          |
 | *embedded Java vtable (words) follows header*                | `long[] vtable` — variable‑length vtable entries (size = `vtableLen`) |
-| *embedded Java itables follow vtable*                        | `long[] itable` — variable‑length itable region (size derived from `_itable_len`) |
+| *embedded Java itables follow vtable*                        | `ITable itable` — variable‑length itable region (size derived from `_itable_len`) |
 | *embedded static fields follow itables*                      | `long[] staticField` — raw static field storage (size derived from `staticFieldSize`) |
 | *embedded nonstatic oop‑map blocks follow static fields*     | `long[] nonStaticOopMapBlock` — raw non‑static oop‑map data (size derived from `nonStaticOopMapSize`) |
 

@@ -1,8 +1,15 @@
 package io.github.chains_project.aotp.oops.klass;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.github.chains_project.aotp.utils.ByteReader;
 
 record InstanceClassFlags(short flags, byte status) { }
+
+record InterfaceDescriptor(long klass, long itableIndex) {}
+
+record ITable(List<InterfaceDescriptor> interfaces, long[] overridenMethods) { }
 
 /**
  * Concrete {@link ClassEntry} representing an instance Klass.
@@ -62,7 +69,7 @@ public final class InstanceClass extends ClassEntry {
 
     // Variable length attributes
     public final long[] vtable;
-    public final long[] itable;
+    public final ITable itable;
     public final long[] staticField;
     public final long[] nonStaticOopMapBlock;
     // TODO: embedded implementor of this interface follows here
@@ -138,7 +145,7 @@ public final class InstanceClass extends ClassEntry {
                           long fieldInfoSearchTable,
                           long fieldsStatus,
                           long[] vtable,
-                          long[] itable,
+                          ITable itable,
                           long[] staticField,
                           long[] nonStaticOopMapBlock) {
         super(vTablePointer,
@@ -384,17 +391,34 @@ public final class InstanceClass extends ClassEntry {
             pos += 8;
         }
 
-        long[] itable = new long[itableLen];
-        for (int i = 0; i < itableLen; i++) {
-            itable[i] = ByteReader.readLongLE(bytes, pos);
+        int itableLengthInBytes = itableLen * 8;
+        List<InterfaceDescriptor> interfaces = new ArrayList<>();
+        // null pointer is not reached
+        while (!"0x0000000000000000".equals(ByteReader.readLongLE(bytes, pos)) && itableLengthInBytes >=16) {
+            long interfaceKlass = ByteReader.readLongLE(bytes, pos);
+            pos += 8;
+            int iterfaceOffset = ByteReader.readIntLE(bytes, pos);
+            pos += 4;
+            pos += 4; // padding
+            interfaces.add(new InterfaceDescriptor(interfaceKlass, iterfaceOffset));
+            itableLengthInBytes -= 16;
+        }
+        if (itableLengthInBytes % 8 != 0) {
+            throw new IllegalStateException("itableLengthInBytes is not divisible by 8");
+        }
+        long[] overridenMethods = new long[itableLengthInBytes/8];
+        for (int i = 0; i < itableLengthInBytes/8; i++) {
+            overridenMethods[i] = ByteReader.readLongLE(bytes, pos);
             pos += 8;
         }
+        ITable itable = new ITable(interfaces, overridenMethods);
 
+        // Contrary to what is written in the specification, static fields are not stored here
         long[] staticField = new long[staticFieldSize];
-        for (int i = 0; i < staticFieldSize; i++) {
-            staticField[i] = ByteReader.readLongLE(bytes, pos);
-            pos += 8;
-        }
+        // for (int i = 0; i < staticFieldSize; i++) {
+        //     staticField[i] = ByteReader.readLongLE(bytes, pos);
+        //     pos += 8;
+        // }
 
         long[] nonStaticOopMapBlock = new long[nonStaticOopMapSize];
         for (int i = 0; i < nonStaticOopMapSize; i++) {
@@ -476,7 +500,7 @@ public final class InstanceClass extends ClassEntry {
     }
 
     public int getSize() {
-        return super.getSize() + 272 + vtable.length * 8 + itable.length * 8 + staticField.length * 8 + nonStaticOopMapBlock.length * 8;
+        return super.getSize() + 272 + vtable.length * 8 + itableLen * 8 + nonStaticOopMapBlock.length * (4+4);
     }
 }
 
