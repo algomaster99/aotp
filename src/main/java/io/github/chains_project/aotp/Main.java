@@ -1,9 +1,11 @@
 package io.github.chains_project.aotp;
 
 import java.io.IOException;
-import java.util.OptionalInt;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
+import io.github.chains_project.aotp.oops.klass.ClassEntry;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -28,12 +30,15 @@ public class Main implements Callable<Integer> {
 
     @Option(names = "--class-size",
             paramLabel = "CLASS",
-            description = "Print the size of the specified class.")
-    String classSizeClassName;
+            description = "Print the size of the specified class.",
+            arity = "1..*")
+    List<String> classSizeClassNames;
 
     @Override
     public Integer call() {
-        boolean anyFlag = header || listClasses || classSizeClassName != null || printClassName != null;
+        boolean anyFlag = header || listClasses
+                || (classSizeClassNames != null && !classSizeClassNames.isEmpty())
+                || printClassName != null;
         if (!anyFlag) {
             header = true;
             listClasses = true;
@@ -51,13 +56,11 @@ public class Main implements Callable<Integer> {
                 }
             }
 
-            if (classSizeClassName != null) {
-                OptionalInt size = AotpApi.getClassSize(filePath, classSizeClassName);
-                if (size.isEmpty()) {
-                    System.err.println("Class not found: " + classSizeClassName);
-                    return 1;
+            if (classSizeClassNames != null && !classSizeClassNames.isEmpty()) {
+                Map<ClassEntry, Integer> sizes = AotpApi.getClassSizes(filePath, classSizeClassNames);
+                for (Map.Entry<ClassEntry, Integer> entry : sizes.entrySet()) {
+                    System.out.println(entry.getKey().getName() + ": " + entry.getValue());
                 }
-                System.out.println(size.getAsInt());
             }
 
             if (printClassName != null) {

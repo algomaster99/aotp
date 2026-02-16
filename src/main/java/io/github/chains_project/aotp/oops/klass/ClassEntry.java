@@ -257,5 +257,17 @@ public abstract class ClassEntry {
     private static void printLine(PrintStream out, String indent, String fieldName, String value) {
         out.printf("%s%-24s %s%n", indent, fieldName, value);
     }
+
+    public boolean isInterface() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public String getName() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public void setName(String name) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }
 

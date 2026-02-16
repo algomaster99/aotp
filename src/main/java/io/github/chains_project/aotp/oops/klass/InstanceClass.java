@@ -19,6 +19,8 @@ record OopMapBlock(int offset, int count) {}
  */
 public final class InstanceClass extends ClassEntry {
 
+    private String classNameFromRoRegion;
+
     public final long annotations;
     public final long packageEntry;
     public final long arrayKlasses;
@@ -506,6 +508,20 @@ public final class InstanceClass extends ClassEntry {
 
     public int getSize() {
         return super.getSize() + 272 + vtable.length * 8 + itableLen * 8 + nonStaticOopMapSize * 8;
+    }
+
+    @Override
+    public boolean isInterface() {
+        return (accessFlags & 0x200) != 0;
+    }
+
+    @Override
+    public String getName() {
+        return classNameFromRoRegion;
+    }
+
+    public void setName(String name) {
+        this.classNameFromRoRegion = name;
     }
 }
 

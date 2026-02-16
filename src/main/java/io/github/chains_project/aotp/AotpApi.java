@@ -6,8 +6,9 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.Map;
 
 import io.github.chains_project.aotp.header.CDSFileMapRegion;
 import io.github.chains_project.aotp.header.FileMapHeader;
@@ -23,9 +24,6 @@ import io.github.chains_project.aotp.utils.LittleEndianRandomAccessFile;
  * instead of invoking the CLI.
  */
 public final class AotpApi {
-
-    /** Class name and parsed entry from the RW region. */
-    public record ClassInfo(String name, ClassEntry entry) {}
 
     // Magic number for AOTCache files
     // https://github.com/openjdk/jdk/blob/6f6966b28b2c5a18b001be49f5db429c667d7a8f/src/hotspot/share/include/cds.h#L39
@@ -45,7 +43,7 @@ public final class AotpApi {
         );
     }
 
-    private static List<ClassInfo> loadClasses(LittleEndianRandomAccessFile file,
+    private static List<ClassEntry> loadClasses(LittleEndianRandomAccessFile file,
             RegionData rwRegionData,
             long requestedBaseAddress) throws IOException {
         byte[] bytes = rwRegionData.bytes();
@@ -54,7 +52,7 @@ public final class AotpApi {
         }
 
         List<Long> patterns = getPatternsForClasses(requestedBaseAddress);
-        List<ClassInfo> entries = new ArrayList<>();
+        List<ClassEntry> entries = new ArrayList<>();
         final int len = bytes.length;
 
         for (int offset = 0; offset + 8 <= len; offset += 8) {
@@ -66,7 +64,8 @@ public final class AotpApi {
             InstanceClass parsed = InstanceClass.parse(bytes, entryStart);
             String className = readSymbolName(file, parsed.namePointer(), requestedBaseAddress);
             if (className != null) {
-                entries.add(new ClassInfo(className, parsed));
+                parsed.setName(className);
+                entries.add(parsed);
             }
         }
 
@@ -139,17 +138,17 @@ public final class AotpApi {
      * @throws IOException if the file cannot be read or is invalid
      */
     public static List<String> listClassNames(String filePath) throws IOException {
-        return listClasses(filePath).stream().map(ClassInfo::name).toList();
+        return listClasses(filePath).stream().map(ClassEntry::getName).toList();
     }
 
     /**
-     * Returns the list of classes (name + entry) found in the RW region.
+     * Returns the list of classes found in the RW region.
      *
      * @param filePath path to the AOT cache file
-     * @return list of ClassInfo (never null)
+     * @return list of ClassEntry (never null)
      * @throws IOException if the file cannot be read or is invalid
      */
-    public static List<ClassInfo> listClasses(String filePath) throws IOException {
+    public static List<ClassEntry> listClasses(String filePath) throws IOException {
         try (RandomAccessFile raf = new RandomAccessFile(filePath, "r")) {
             LittleEndianRandomAccessFile file = new LittleEndianRandomAccessFile(raf);
             GenericHeader genericHeader = new GenericHeader(file);
@@ -171,21 +170,27 @@ public final class AotpApi {
     }
 
     /**
-     * Returns the size of the given class if found.
+     * Returns sizes for a batch of classes. Only classes that are present in the
+     * AOT cache are included in the result.
      *
-     * @param filePath  path to the AOT cache file
-     * @param className fully qualified class name
-     * @return the class size, or empty if the class is not found
+     * @param filePath   path to the AOT cache file
+     * @param classNames list of fully qualified class names
+     * @return map from class name to its size (only for found classes)
      * @throws IOException if the file cannot be read or is invalid
      */
-    public static OptionalInt getClassSize(String filePath, String className) throws IOException {
-        List<ClassInfo> classes = listClasses(filePath);
-        for (ClassInfo info : classes) {
-            if (info.name().equals(className)) {
-                return OptionalInt.of(info.entry().getSize());
+    public static Map<ClassEntry, Integer> getClassSizes(String filePath, List<String> classNames) throws IOException {
+        List<ClassEntry> classes = listClasses(filePath);
+        Map<ClassEntry, Integer> sizeByClassEntry = new HashMap<>();
+        for (ClassEntry entry : classes) {
+            sizeByClassEntry.put(entry, entry.getSize());
+        }
+        Map<ClassEntry, Integer> result = new HashMap<>();
+        for (ClassEntry entry : classes) {
+            if (classNames.contains(entry.getName())) {
+                result.put(entry, sizeByClassEntry.get(entry));
             }
         }
-        return OptionalInt.empty();
+        return result;
     }
 
     /**
@@ -198,10 +203,10 @@ public final class AotpApi {
      * @throws IOException if the file cannot be read or is invalid
      */
     public static boolean printClass(String filePath, String className, PrintStream out) throws IOException {
-        List<ClassInfo> classes = listClasses(filePath);
-        for (ClassInfo info : classes) {
-            if (info.name().equals(className)) {
-                info.entry().print(out);
+        List<ClassEntry> classes = listClasses(filePath);
+        for (ClassEntry entry : classes) {
+            if (entry.getName().equals(className)) {
+                entry.print(out);
                 return true;
             }
         }
